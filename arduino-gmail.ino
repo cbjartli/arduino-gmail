@@ -56,8 +56,11 @@ void s_init_wifi_exit() {
 
 void s_init_udp_enter() {
   LED_printIP(wifi_localIP());
-  serv_start();
-  sm_emit(SIGSUCC);
+  if (!serv_start()) {
+    sm_emit(SIGERR);
+  } else {
+    sm_emit(SIGSUCC);
+  }
 }
 
 void s_listen_enter() {
@@ -71,11 +74,17 @@ void s_listen_exit() {
 void s_listen_signal(t_sig *s) {
   t_data_recv buf;
   switch (s->type) {
+
     case sig_timeout:
       if (serv_getdata(&buf)) {
         setColor(buf.r, buf.g, buf.b);
         LED_printDigit(buf.num);
+      } else if (wifi_status() != WL_CONNECTED) {
+        sm_emit(SIGCONNLOST);
       } 
+    
+    default: 
+      break;
   }
 }
 
@@ -102,68 +111,68 @@ void s_receive_enter() {
 /********************************** END STATES ********************************/
 
 void setup() {
-  s_fatal_err   = { .onEnter     = s_fatal_err_enter, 
-                    .onExit      = NULL, 
-                    .onSignal    = NULL,
-                    .transitions = { 
-                        .success = NULL, 
-                        .err     = NULL,
-                        .timeout = NULL,
-                        .recv    = NULL}};
+  s_fatal_err   = { .onEnter       = s_fatal_err_enter, 
+                    .onExit        = NULL, 
+                    .onSignal      = NULL,
+                    .transitions   = { 
+                        .success   = NULL, 
+                        .err       = NULL,
+                        .timeout   = NULL,
+                        .conn_lost = NULL}};
 
-  s_init        = { .onEnter     = s_init_enter, 
-                    .onExit      = NULL, 
-                    .onSignal    = NULL,
-                    .transitions = { 
-                        .success = &s_init_timer, 
-                        .err     = &s_fatal_err,
-                        .timeout = NULL,
-                        .recv    = NULL}};
+  s_init        = { .onEnter       = s_init_enter, 
+                    .onExit        = NULL, 
+                    .onSignal      = NULL,
+                    .transitions   = { 
+                        .success   = &s_init_timer, 
+                        .err       = &s_fatal_err,
+                        .timeout   = NULL,
+                        .conn_lost = NULL}};
 
-  s_init_timer  = { .onEnter     = s_init_timer_enter, 
-                    .onExit      = NULL, 
-                    .onSignal    = NULL,
-                    .transitions = { 
-                        .success = &s_init_wifi, 
-                        .err     = &s_fatal_err,
-                        .timeout = NULL,
-                        .recv    = NULL}};
+  s_init_timer  = { .onEnter       = s_init_timer_enter, 
+                    .onExit        = NULL, 
+                    .onSignal      = NULL,
+                    .transitions   = { 
+                        .success   = &s_init_wifi, 
+                        .err       = &s_fatal_err,
+                        .timeout   = NULL,
+                        .conn_lost = NULL}};
 
-  s_init_wifi   = { .onEnter     = s_init_wifi_enter, 
-                    .onExit      = s_init_wifi_exit, 
-                    .onSignal    = NULL,
-                    .transitions = { 
-                        .success = &s_init_udp, 
-                        .err     = &s_fatal_err,
-                        .timeout = NULL,
-                        .recv    = NULL}};
+  s_init_wifi   = { .onEnter       = s_init_wifi_enter, 
+                    .onExit        = s_init_wifi_exit, 
+                    .onSignal      = NULL,
+                    .transitions   = { 
+                        .success   = &s_init_udp, 
+                        .err       = &s_fatal_err,
+                        .timeout   = NULL,
+                        .conn_lost = NULL}};
 
-  s_init_udp    = { .onEnter     = s_init_udp_enter, 
-                    .onExit      = NULL, 
-                    .onSignal    = NULL,
-                    .transitions = { 
-                        .success = &s_discover, 
-                        .err     = &s_fatal_err,
-                        .timeout = NULL,
-                        .recv    = NULL}};
+  s_init_udp    = { .onEnter       = s_init_udp_enter, 
+                    .onExit        = NULL, 
+                    .onSignal      = NULL,
+                    .transitions   = { 
+                        .success   = &s_discover, 
+                        .err       = &s_fatal_err,
+                        .timeout   = NULL,
+                        .conn_lost = &s_init_udp}};
 
-  s_discover    = { .onEnter     = s_discover_enter, 
-                    .onExit      = s_discover_exit, 
-                    .onSignal    = NULL,
-                    .transitions = { 
-                        .success = &s_listen, 
-                        .err     = NULL,
-                        .timeout = NULL,
-                        .recv    = NULL}};
+  s_discover    = { .onEnter       = s_discover_enter, 
+                    .onExit        = s_discover_exit, 
+                    .onSignal      = NULL,
+                    .transitions   = { 
+                        .success   = &s_listen, 
+                        .err       = NULL,
+                        .timeout   = NULL,
+                        .conn_lost = NULL}};
 
-  s_listen      = { .onEnter     = s_listen_enter,   
-                    .onExit      = s_listen_exit, 
-                    .onSignal    = s_listen_signal,
-                    .transitions = { 
-                        .success = NULL, 
-                        .err     = &s_fatal_err,
-                        .timeout = NULL,
-                        .recv    = NULL}};
+  s_listen      = { .onEnter       = s_listen_enter,   
+                    .onExit        = s_listen_exit, 
+                    .onSignal      = s_listen_signal,
+                    .transitions   = { 
+                        .success   = NULL, 
+                        .err       = &s_fatal_err,
+                        .timeout   = NULL,
+                        .conn_lost = NULL}};
 
 sm_init(&s_init);   
 

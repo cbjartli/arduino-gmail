@@ -8,10 +8,10 @@ t_state *state;
 signal_ringbuf queue;
 t_state s_fail, s_init, s_init_timer, s_init_wifi, s_init_udp, s_receive, s_listen;
 
-const t_sig  _sig_succ = { .type = sig_success };
+const t_sig  _sig_success = { .type = sig_success };
 const t_sig  _sig_err = { .type = sig_err };
-const t_sig  _sig_tout = { .type = sig_timeout };
-const t_sig  _sig_recv = { .type = sig_recv };
+const t_sig  _sig_timeout = { .type = sig_timeout };
+const t_sig  _sig_conn_lost = { .type = sig_conn_lost };
 
 // Simple ring buffer based on 
 // http://www.downtowndougbrown.com/2013/01/microcontrollers-interrupt-safe-ring-buffers/

@@ -16,7 +16,7 @@ typedef enum {
     sig_success = 0,
     sig_err,
     sig_timeout,
-    sig_recv
+    sig_conn_lost
 } t_sig_type;
 
 typedef struct {
@@ -24,14 +24,14 @@ typedef struct {
     char        data[TBUF_SIZ];
 } t_sig;
 
-extern const t_sig _sig_succ;
+extern const t_sig _sig_success;
 extern const t_sig _sig_err;
-extern const t_sig _sig_tout;
-extern const t_sig _sig_recv;
-#define SIGSUCC &_sig_succ
+extern const t_sig _sig_timeout;
+extern const t_sig _sig_conn_lost;
+#define SIGSUCC &_sig_success
 #define SIGERR  &_sig_err
-#define SIGTOUT &_sig_tout
-#define SIGRECV &_sig_recv
+#define SIGTIMEOUT &_sig_timeout
+#define SIGCONNLOST &_sig_conn_lost
 
 typedef struct t_state t_state; // In order to allow t_state to contain pointer to itself.
 typedef struct t_transition t_transition; // Likewise.
@@ -41,7 +41,7 @@ struct t_transition {
     t_state *success;
     t_state *err;
     t_state *timeout;
-    t_state *recv;
+    t_state *conn_lost;
 };
 
 struct t_state {
@@ -51,13 +51,6 @@ struct t_state {
     t_transition transitions;
 };
 
-typedef struct __attribute__((packed)) {
-  uint8_t opcode[4];
-  uint8_t r;
-  uint8_t g;
-  uint8_t b;
-  uint8_t num;
-} t_data_recv;
 
 typedef struct {
    t_sig signals[MAX_PENDING_SIG]; 
@@ -65,7 +58,6 @@ typedef struct {
    uint8_t ring_tail;
 } signal_ringbuf;
 
-void sm_dispatch(const t_sig *);
 void sm_init(t_state *);
 void sm_emit(const t_sig *);
 void sm_process_signals();

@@ -12,7 +12,7 @@ const uint8_t opc_discover[4] = OPCODE_DISCOVER;
 bool opcode_equals(const uint8_t *a, const uint8_t *b) {
     bool rc = true;
 
-    for (int i = 0; i < 4 ; ++i, ++a, ++b)
+    for (int i = 0; i < MEMBER_SIZE(t_data_recv, opcode); ++i, ++a, ++b)
     {
         rc = rc && (*a == *b);
     }
@@ -21,13 +21,13 @@ bool opcode_equals(const uint8_t *a, const uint8_t *b) {
 }
 
 
-int status = WL_IDLE_STATUS;
 WiFiUDP Udp;
 IPAddress serverIP;
 
 void wifi_connect() {
-  while (status != WL_CONNECTED) {
-    status = WiFi.begin(WIFI_SSID, WIFI_PASS); // Connect to WPA/WPA2 network
+  WiFi.disconnect();
+
+  while (WiFi.begin(WIFI_SSID, WIFI_PASS) != WL_CONNECTED) {
     delay(1000); // wait 1 second for connection:
   }
 }
@@ -36,12 +36,16 @@ IPAddress wifi_localIP() {
     return WiFi.localIP();
 }
 
-void serv_start() {
-  Udp.begin(LISTENPORT);
+int wifi_status() {
+    return WiFi.status();
+}
+
+bool serv_start() {
+  return Udp.begin(LISTENPORT);
 }
 
 void ISR_poll_timeout() { 
-    sm_emit(SIGTOUT);
+    sm_emit(SIGTIMEOUT);
 }
 
 void serv_start_polltimer() {
@@ -54,18 +58,31 @@ void serv_stop_polltimer() {
 }
 
 bool serv_getdata(t_data_recv *buf) {
-  int len = Udp.read((char*)buf, sizeof(t_data_recv));
+  char rxbuf[UDP_TX_PACKET_MAX_SIZE];
+  int packetSize = Udp.parsePacket();
 
+  if (packetSize == 0) {
+      return false;
+  }
 
-  return (len > 0);
+  Udp.read(rxbuf, sizeof(rxbuf));
+
+  if (packetSize != sizeof(t_data_recv)) {
+      return false;
+  }
+
+  memcpy(buf, rxbuf, sizeof(t_data_recv));
+
+  return true;
 }
 
 bool serv_discover() {
   t_data_recv buf;
-  memset(&buf, 0, sizeof(t_data_recv));
+  memset(&buf, 0, sizeof buf);
 
-  while (!opcode_equals(buf.opcode, opc_discover)) {
-    int len = Udp.read((char*)&buf, sizeof(t_data_recv));
-  }
+  while(!serv_getdata(&buf) && !opcode_equals(buf.opcode, opc_discover)) { }
+
+  serverIP = Udp.remoteIP();
+  return true;
 }
 

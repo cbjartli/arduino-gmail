@@ -6,10 +6,18 @@
 
 #define OPCODE_DISCOVER { 0xde, 0xad, 0xbe, 0xef }
 
-void wifi_connect();
-IPAddress wifi_localIP();
+typedef struct __attribute__((packed)) {
+  uint8_t opcode[4];
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+  uint8_t num;
+} t_data_recv;
 
-void serv_start();
+void wifi_connect();
+int wifi_status();
+IPAddress wifi_localIP();
+bool serv_start();
 void serv_start_polltimer();
 void serv_stop_polltimer();
 bool serv_getdata(t_data_recv *);
