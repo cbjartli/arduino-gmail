@@ -12,6 +12,7 @@ const t_sig  _sig_success = { .type = sig_success };
 const t_sig  _sig_err = { .type = sig_err };
 const t_sig  _sig_timeout = { .type = sig_timeout };
 const t_sig  _sig_conn_lost = { .type = sig_conn_lost };
+const t_sig  _sig_no_server = { .type = sig_no_server };
 
 // Simple ring buffer based on 
 // http://www.downtowndougbrown.com/2013/01/microcontrollers-interrupt-safe-ring-buffers/

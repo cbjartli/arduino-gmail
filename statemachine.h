@@ -7,7 +7,7 @@ extern "C" {
 
 #include <stdint.h>
 
-#define NUM_SIGS 4
+#define NUM_SIGS 5
 #define MAX_PENDING_SIG 16
 #define TBUF_SIZ 8
 
@@ -16,7 +16,8 @@ typedef enum {
     sig_success = 0,
     sig_err,
     sig_timeout,
-    sig_conn_lost
+    sig_conn_lost,
+    sig_no_server
 } t_sig_type;
 
 typedef struct {
@@ -28,10 +29,12 @@ extern const t_sig _sig_success;
 extern const t_sig _sig_err;
 extern const t_sig _sig_timeout;
 extern const t_sig _sig_conn_lost;
+extern const t_sig _sig_no_server;
 #define SIGSUCC &_sig_success
 #define SIGERR  &_sig_err
 #define SIGTIMEOUT &_sig_timeout
 #define SIGCONNLOST &_sig_conn_lost
+#define SIGNOSERVER &_sig_no_server
 
 typedef struct t_state t_state; // In order to allow t_state to contain pointer to itself.
 typedef struct t_transition t_transition; // Likewise.
@@ -42,6 +45,7 @@ struct t_transition {
     t_state *err;
     t_state *timeout;
     t_state *conn_lost;
+    t_state *no_server;
 };
 
 struct t_state {

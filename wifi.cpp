@@ -41,6 +41,7 @@ int wifi_status() {
 }
 
 bool serv_start() {
+  Udp.stop();
   return Udp.begin(LISTENPORT);
 }
 
@@ -49,7 +50,7 @@ void ISR_poll_timeout() {
 }
 
 void serv_start_polltimer() {
-  Timer1.setPeriod(10000);
+  Timer1.setPeriod(LISTEN_TIMEOUT_US);
   Timer1.attachInterrupt(ISR_poll_timeout); 
 }
 
@@ -80,9 +81,12 @@ bool serv_discover() {
   t_data_recv buf;
   memset(&buf, 0, sizeof buf);
 
-  while(!serv_getdata(&buf) && !opcode_equals(buf.opcode, opc_discover)) { }
+  if (serv_getdata(&buf) && opcode_equals(buf.opcode, opc_discover)) {
+    serverIP = Udp.remoteIP();
+    return true;   
+  } else {
+    return false;
+  }
 
-  serverIP = Udp.remoteIP();
-  return true;
 }
 
