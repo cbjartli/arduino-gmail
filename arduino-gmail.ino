@@ -81,6 +81,8 @@ void s_listen_signal(t_sig *s) {
 
 void s_discover_enter() {
     LED_startDiscoverAnimation();
+    serv_discover();
+    sm_emit(SIGSUCC);
 }
 
 void s_discover_exit() {

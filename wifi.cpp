@@ -5,10 +5,25 @@
 #include "config.h"
 #include <TimerOne.h>
 #include "statemachine.h"
+#include "util.h"
+
+const uint8_t opc_discover[4] = OPCODE_DISCOVER;
+
+bool opcode_equals(const uint8_t *a, const uint8_t *b) {
+    bool rc = true;
+
+    for (int i = 0; i < 4 ; ++i, ++a, ++b)
+    {
+        rc = rc && (*a == *b);
+    }
+
+    return rc;
+}
 
 
 int status = WL_IDLE_STATUS;
 WiFiUDP Udp;
+IPAddress serverIP;
 
 void wifi_connect() {
   while (status != WL_CONNECTED) {
@@ -39,8 +54,18 @@ void serv_stop_polltimer() {
 }
 
 bool serv_getdata(t_data_recv *buf) {
-  int len = Udp.read((char *)buf, sizeof(t_data_recv));
+  int len = Udp.read((char*)buf, sizeof(t_data_recv));
+
 
   return (len > 0);
+}
+
+bool serv_discover() {
+  t_data_recv buf;
+  memset(&buf, 0, sizeof(t_data_recv));
+
+  while (!opcode_equals(buf.opcode, opc_discover)) {
+    int len = Udp.read((char*)&buf, sizeof(t_data_recv));
+  }
 }
 

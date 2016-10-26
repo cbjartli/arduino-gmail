@@ -1,6 +1,7 @@
 #include "statemachine.h"
 #include <stdint.h>
 #include <stdbool.h>
+#include <avr/interrupt.h>
 
 
 t_state *state; 
@@ -12,18 +13,29 @@ const t_sig  _sig_err = { .type = sig_err };
 const t_sig  _sig_tout = { .type = sig_timeout };
 const t_sig  _sig_recv = { .type = sig_recv };
 
-/* Based on http://www.downtowndougbrown.com/2013/01/microcontrollers-interrupt-safe-ring-buffers/ */
+// Simple ring buffer based on 
+// http://www.downtowndougbrown.com/2013/01/microcontrollers-interrupt-safe-ring-buffers/
+// Note: his assumptions are: single producer, single consumer. We have MPSC (multiple producers, 
+// single consumer), the producers being the main context and interrupt context. We must therefore
+// disable interrupts on enqueue. 
 bool queue_signal(const t_sig *s) {
+    bool rv;
     uint8_t next_head = (queue.ring_head + 1) % MAX_PENDING_SIG;
+
+    cli(); // Disable interrupts 
+
     if (next_head != queue.ring_tail) {
         /* There is room */
         queue.signals[queue.ring_head] = *s;
         queue.ring_head = next_head;
-        return true;
+        rv = true;
     } else {
         /* No room */
-        return false;
+        rv = false;
     }
+
+    sei(); // Enable interrupts 
+    return rv;
 }
 
 bool dequeue_signal(t_sig *s) {
